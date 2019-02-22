@@ -1,0 +1,10 @@
+{
+  "db_path": "localhost",
+  "bot_token": "",
+  "db_user":"",
+  "db_passwd":"",
+   "db_name":"",
+  "debug_level": 30,
+  "ban_id": [
+  ]
+}

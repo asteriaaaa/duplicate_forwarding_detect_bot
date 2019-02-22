@@ -1,0 +1,94 @@
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import telegram.messageentity
+import bot_db as db
+import logging
+import datetime
+import json
+import sys
+import logging
+
+TRIGGERS = {}
+BAN_IDS = []
+INIT_TIMESTAMP = datetime.datetime.now()
+
+logging.basicConfig(filename='log.txt')
+
+
+def process_chat_message(bot, update):
+    print(str(update.message.date) , update.message.chat_id)
+    if not update.message.text:
+        print('no text')
+        return
+    if (len(update.message.text) <= 40):
+        print('short message')
+        return
+    if update.edited_message and not update.edited_message.text.startswith('/'):
+        db.log_message(message_id=update.edited_message.message_id, text=update.edited_message.text,
+                chat_id=update.edited_message.chat_id,
+                 user_id=update.edited_message.from_user.id, time=update.edited_message.edit_date, edited=True)
+    else:
+        if update.message.forward_from != update.message.from_user and not update.message.text.startswith('/'):
+            duplicated = db.search_duplicate(update.message.text)
+            if duplicated:
+                duplicated = list(duplicated)
+                if str(duplicated[2]) == str(update.message.chat_id):
+                    link = 'tg://openmessage?chat_id=' + str(duplicated[2]) + '&message_id=' + str(duplicated[0])
+                    update.message.reply_text(text='<a href="' + link + '">Duplicated!</a>', parse_mode=telegram.ParseMode.HTML)
+        if update.message.text and not update.message.text.startswith('/'):
+             db.log_message(message_id=update.message.message_id, text=update.message.text,
+                      chat_id=update.message.chat_id,
+                      user_id=update.message.from_user.id, time=update.message.date)
+
+
+def show_help(bot, update):
+    if update.message.date < INIT_TIMESTAMP:
+        return
+    if update.message.from_user.id in BAN_IDS:
+        return
+    text = 'Just detect long duplicated forwards.'
+    update.message.reply_text(text)
+
+
+def stats(bot, update):
+    if update.message.date < INIT_TIMESTAMP:
+        return
+    if update.message.from_user.id in BAN_IDS:
+        return
+    result = db.query_chat_stats(update.message.chat_id)
+    if not result:
+        update.message.reply_text('No stats to show')
+    else:
+        lines = []
+        for user in result:
+            lines.append('%s %s (%d) => %d' % user)
+        update.message.reply_text('\n'.join(lines), quote=False)
+
+
+
+def main():
+    config = {}
+    try:
+        with open('config.json') as f:
+            config = json.load(f)
+    except json.JSONDecodeError or FileNotFoundError:
+        print('Bad config!!!')
+        exit(1)
+
+    global BAN_IDS
+    BAN_IDS = config['ban_id']
+    db.__init__(config['db_path'], config['db_user'], config['db_passwd'], config['db_name'])
+    if len(sys.argv) >= 2:
+        if sys.argv[1] == '--setup':
+            db.setup()
+    logging.basicConfig(level=config['debug_level'])
+
+    updater = Updater(token=config['bot_token'])
+    updater.dispatcher.add_handler(MessageHandler(Filters.all, process_chat_message, allow_edited=True), group=-1)
+    # text logger & counter & user info update & recent edits
+    updater.dispatcher.add_handler(CommandHandler('help', show_help))
+    # process text triggers
+    updater.start_polling()
+
+
+if __name__ == '__main__':
+    main()
