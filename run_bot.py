@@ -5,13 +5,10 @@ import logging
 import datetime
 import json
 import sys
-import logging
 
 TRIGGERS = {}
 BAN_IDS = []
 INIT_TIMESTAMP = datetime.datetime.now()
-
-logging.basicConfig(filename='log.txt')
 
 
 def process_chat_message(bot, update):
@@ -22,22 +19,21 @@ def process_chat_message(bot, update):
     if (len(update.message.text) <= 40):
         print('short message')
         return
-    if update.edited_message and not update.edited_message.text.startswith('/'):
-        db.log_message(message_id=update.edited_message.message_id, text=update.edited_message.text,
-                chat_id=update.edited_message.chat_id,
-                 user_id=update.edited_message.from_user.id, time=update.edited_message.edit_date, edited=True)
-    else:
-        if update.message.forward_from != update.message.from_user and not update.message.text.startswith('/'):
-            duplicated = db.search_duplicate(update.message.text)
-            if duplicated:
-                duplicated = list(duplicated)
-                if str(duplicated[2]) == str(update.message.chat_id):
-                    link = 'tg://openmessage?chat_id=' + str(duplicated[2]) + '&message_id=' + str(duplicated[0])
-                    update.message.reply_text(text='<a href="' + link + '">Duplicated!</a>', parse_mode=telegram.ParseMode.HTML)
-        if update.message.text and not update.message.text.startswith('/'):
-             db.log_message(message_id=update.message.message_id, text=update.message.text,
+    if update.message.forward_from != update.message.from_user and not update.message.text.startswith('/'):
+        duplicated = db.search_duplicate(update.message.text, update.message.chat_id)
+        if duplicated:
+            duplicated = list(duplicated)
+            link = 'tg://openmessage?chat_id=' + str(duplicated[2]) + '&message_id=' + str(duplicated[0])
+            update.message.reply_text(text='<a href="' + link + '">Duplicated!</a>', parse_mode=telegram.ParseMode.HTML)
+            return
+    if update.message.text and not update.message.text.startswith('/'):
+        print('saved one forward')
+        db.log_message(message_id=update.message.message_id, text=update.message.text,
                       chat_id=update.message.chat_id,
                       user_id=update.message.from_user.id, time=update.message.date)
+    else:
+        print('no save')
+
 
 
 def show_help(bot, update):
