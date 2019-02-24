@@ -40,22 +40,6 @@ def show_help(bot, update):
     update.message.reply_text(text)
 
 
-def stats(bot, update):
-    if update.message.date < INIT_TIMESTAMP:
-        return
-    if update.message.from_user.id in BAN_IDS:
-        return
-    result = db.query_chat_stats(update.message.chat_id)
-    if not result:
-        update.message.reply_text('No stats to show')
-    else:
-        lines = []
-        for user in result:
-            lines.append('%s %s (%d) => %d' % user)
-        update.message.reply_text('\n'.join(lines), quote=False)
-
-
-
 def main():
     config = {}
     try:
