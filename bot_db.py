@@ -37,13 +37,7 @@ def log_message(message_id, text, chat_id, user_id, time, edited=False):
     connection.commit()
 
 def search_duplicate(keywords, chat_id):
-    c.execute('select count(text) from chats where text=%s and chat_id=%s', (keywords,chat_id))
+    c.execute('select * from chats where text=%s and chat_id=%s', (keywords,chat_id))
     cursor=c.fetchone()
-    print(cursor)
-    if cursor[0]:
-        print('in the if')
-        c.execute('select * from chats where text="'+ keywords +'"')
-        cursor = c.fetchone()
-        return cursor
-    return None
+    return cursor
 

@@ -16,23 +16,18 @@ def process_chat_message(bot, update):
     if not update.message.text:
         print('no text')
         return
-    if (len(update.message.text) <= 40):
-        print('short message')
-        return
-    if update.message.forward_from != update.message.from_user and not update.message.text.startswith('/'):
+    if update.message.forward_from or update.message.forward_from_chat:
         duplicated = db.search_duplicate(update.message.text, update.message.chat_id)
         if duplicated:
             duplicated = list(duplicated)
             link = 'tg://openmessage?chat_id=' + str(duplicated[2]) + '&message_id=' + str(duplicated[0])
             update.message.reply_text(text='<a href="' + link + '">Duplicated!</a>', parse_mode=telegram.ParseMode.HTML)
             return
-    if update.message.text and not update.message.text.startswith('/'):
-        print('saved one forward')
-        db.log_message(message_id=update.message.message_id, text=update.message.text,
-                      chat_id=update.message.chat_id,
-                      user_id=update.message.from_user.id, time=update.message.date)
-    else:
-        print('no save')
+        if (len(update.message.text) >= 20):
+            print('saved one forward')
+            db.log_message(message_id=update.message.message_id, text=update.message.text,
+                            chat_id=update.message.chat_id,
+                            user_id=update.message.from_user.id, time=update.message.date)
 
 
 
