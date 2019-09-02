@@ -21,12 +21,11 @@ def process_chat_message(bot, update):
     if update.message.new_chat_members:
         bot.sendMessage(chat_id=update.message.chat_id ,text='有')
         return
-    if update.message.new_chat_photo:
-        bot.sendMessage(chat_id=update.message.chat_id, text='CDD又换头像啦')
-        return
     if not update.message.text:
         print('no text')
         return
+    if update.message.text == '#群组图片':
+        bot.sendMessage(chat_id=update.message.chat_id, text='CDD又换头像啦')
     if update.message.text and (len(update.message.text) <= 40):
         print('short message')
         return
